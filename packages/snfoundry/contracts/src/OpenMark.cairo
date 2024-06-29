@@ -1,22 +1,22 @@
-use starknet::ContractAddress;
-
-#[starknet::interface]
-pub trait IOpenMark<TContractState> {
-    fn buy(self: @TContractState);
-}
-
 #[starknet::contract]
 mod OpenMark {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
+    use openzeppelin::token::erc721::interface::{IERC721};
     use starknet::{get_caller_address, get_contract_address};
-    use super::{ContractAddress, IOpenMark};
+    use contracts::Primitives::{Order, ORDER_STRUCT_TYPE_HASH, ETH_CONTRACT_ADDRESS};
+    use contracts::Interface::IOpenMark;
+    use core::ecdsa::check_ecdsa_signature;
+    use openzeppelin::account::utils::{is_valid_stark_signature};
+    use starknet::ContractAddress;
+
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -25,15 +25,13 @@ mod OpenMark {
         OwnableEvent: OwnableComponent::Event,
     }
 
-    const ETH_CONTRACT_ADDRESS: felt252 =
-        0x49D36570D4E46F48E99674BD3FCC84644DDD6B96F7C741B1562B82F9E004DC7;
 
     #[storage]
     struct Storage {
         eth_token: IERC20CamelDispatcher,
-
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
+        usedOrderSignatures: LegacyMap<felt252, bool>,
     }
 
     #[constructor]
@@ -42,13 +40,22 @@ mod OpenMark {
         self.eth_token.write(IERC20CamelDispatcher { contract_address: eth_contract_address });
 
         self.ownable.initializer(owner);
-
     }
+
 
     #[abi(embed_v0)]
     impl OpenMarkImpl of IOpenMark<ContractState> {
-        fn buy(self: @ContractState) {
-            
+        // fn buy(self: @ContractState) {}
+
+        // fn acceptOffer(self: @ContractState) {}
+
+        // fn cancelOrder(self: @ContractState) {}
+
+        fn verifyOrder(
+            self: @ContractState, order: Order, signature: ByteArray
+        ) -> ContractAddress {
+            let sender = get_caller_address();
+            sender
         }
     }
 }

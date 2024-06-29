@@ -1,4 +1,5 @@
-mod YourContract;
+mod Primitives;
+mod Interface;
 mod OpenMark;
 
 #[cfg(test)]

@@ -5,13 +5,6 @@ const deployScript = async (): Promise<void> => {
     {
       owner: deployer.address, // the deployer address is the owner of the contract
     },
-    "YourContract"
-  );
-  
-  await deployContract(
-    {
-      owner: deployer.address, // the deployer address is the owner of the contract
-    },
     "OpenMark"
   );
 };

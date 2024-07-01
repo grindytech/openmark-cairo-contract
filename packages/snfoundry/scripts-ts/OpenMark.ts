@@ -7,14 +7,20 @@ const types = {
     { name: "chainId", type: "felt" },
   ],
   Order: [
-    { name: "nftContract", type: "felt" },
+    { name: "nftContract", type: "ContractAddress" },
     { name: "tokenId", type: "u128" },
-    { name: "price", type: "u256" },
+    { name: "price", type: "u128" },
     { name: "salt", type: "felt" },
-    { name: "expiry", type: "u256" },
-    { name: "option", type: "u32" },
+    { name: "expiry", type: "u128" },
+    { name: "option", type: "OrderType" },
   ],
 };
+
+enum OrderType {
+  Buy,
+  Sell,
+}
+
 
 interface Order {
   nftContract: string,
@@ -22,7 +28,7 @@ interface Order {
   price: string,
   salt: string,
   expiry: string,
-  option: string,
+  option: OrderType,
 }
 
 function getDomain(chainId: string): typedData.StarkNetDomain {
@@ -54,7 +60,8 @@ const order: Order = {
   price: "3",
   salt: "4",
   expiry: "5",
-  option: "0",
+  option: OrderType.Buy,
 };
 
 console.log(`test test_valid_hash ${getTypedDataHash(order, "393402133025997798000961", 420n)};`);
+

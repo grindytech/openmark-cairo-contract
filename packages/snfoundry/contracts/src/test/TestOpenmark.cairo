@@ -34,7 +34,7 @@ fn get_message_hash_works() {
     let (dispatcher, contract_address) = deploy_contract();
 
     // This value was computed using StarknetJS
-    let message_hash = 0x57ccd3177459e39f9cfc51fcd2bbd2e88f63c05455db3fdf2d3d82fafca9d54;
+    let message_hash = 0x49a126d54c5d4047784d9d4cf177479dd7812ac887f20746c7b9e56fadba5e;
     let order = Order {
         nftContract: 1.try_into().unwrap(),
         tokenId: 2,

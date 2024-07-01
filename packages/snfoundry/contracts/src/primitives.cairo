@@ -18,16 +18,18 @@ pub struct StarknetDomain {
 
 pub const ORDER_STRUCT_TYPE_HASH: felt252 =
     selector!(
-        "Order(nftContract:ContractAddress,tokenId:u64,price:u256,salt:felt,expiry:u256,option:u32)"
+        "Order(nftContract:ContractAddress,tokenId:u128,price:u128,salt:felt,expiry:u128,option:OrderType)"
     );
+
+
 
 #[derive(Copy, Drop, Serde, Hash)]
 pub struct Order {
     pub nftContract: ContractAddress,
-    pub tokenId: u64,
-    pub price: u256,
+    pub tokenId: u128,
+    pub price: u128,
     pub salt: felt252,
-    pub expiry: u256,
+    pub expiry: u128,
     pub option: OrderType,
 }
 
@@ -56,7 +58,7 @@ impl StructHashSimpleStruct of IStructHash<Order> {
         let mut state = PedersenTrait::new(0);
         state = state.update_with(ORDER_STRUCT_TYPE_HASH);
         state = state.update_with(*self);
-        state = state.update_with(3);
+        state = state.update_with(7);
         state.finalize()
     }
 }

@@ -58,20 +58,19 @@ mod OpenMark {
         // fn cancelOrder(self: @ContractState) {}
 
         fn verifyOrder(
-            self: @ContractState, order: Order, signature: ByteArray
-        ) -> ContractAddress {
-            let sender = get_caller_address();
-            sender
+            self: @ContractState, order: Order, signer: felt252, signature: Span<felt252>
+        ) -> bool {
+            let hash = self.get_message_hash(order);
+
+            is_valid_stark_signature(hash, signer, signature)
         }
     }
 
     #[abi(embed_v0)]
     impl OffchainMessageHashImpl of IOffchainMessageHash<ContractState> {
         fn get_message_hash(self: @ContractState, value: Order) -> felt252 {
-            println!("Chain ID: {:?}", get_tx_info().unbox().chain_id);
-
             let domain = StarknetDomain {
-                name: 'dappName', version: 1, chain_id: get_tx_info().unbox().chain_id
+                name: 'OpenMark', version: 1, chain_id: get_tx_info().unbox().chain_id
             };
             let mut state = PedersenTrait::new(0);
             state = state.update_with('StarkNet Message');

@@ -7,7 +7,9 @@ pub trait IOpenMark<TState> {
     // fn acceptOffer(self: @TState);
     // fn cancelOrder(self: @TState);
 
-    fn verifyOrder(self: @TState, order: Order, signature: ByteArray) -> ContractAddress;
+    fn verifyOrder(
+        self: @TState, order: Order, signer: felt252, signature: Span<felt252>
+    ) -> bool;
 }
 
 

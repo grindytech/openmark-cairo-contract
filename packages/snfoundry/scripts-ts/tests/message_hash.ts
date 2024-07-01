@@ -1,4 +1,4 @@
-import { typedData } from "starknet";
+import { BigNumberish, WeierstrassSignatureType, ec, encode, typedData } from "starknet";
 
 const types = {
   StarkNetDomain: [
@@ -33,13 +33,13 @@ interface Order {
 
 function getDomain(chainId: string): typedData.StarkNetDomain {
   return {
-    name: "dappName",
+    name: "OpenMark",
     version: "1",
     chainId,
   };
 }
 
-function getTypedDataHash(myStruct: Order, chainId: string, owner: bigint): string {
+function getTypedDataHash(myStruct: Order, chainId: string, owner: BigNumberish): string {
   return typedData.getMessageHash(getTypedData(myStruct, chainId), owner);
 }
 
@@ -63,5 +63,16 @@ const order: Order = {
   option: OrderType.Buy,
 };
 
-console.log(`test test_valid_hash ${getTypedDataHash(order, "393402133025997798000961", 420n)};`);
+const privateKey = '0x1234567890987654321';
+const starknetPublicKey = ec.starkCurve.getStarkKey(privateKey);
+const account: BigNumberish = starknetPublicKey;
 
+let msgHash = getTypedDataHash(order, "393402133025997798000961", account);
+console.log(`account: ${account};`);
+console.log(`test msgHash: ${msgHash};`);
+
+const signature: WeierstrassSignatureType = ec.starkCurve.sign(msgHash, privateKey);
+
+
+console.log("signature r: ", signature.r.toString(16));
+console.log("signature s: ", signature.s.toString(16));

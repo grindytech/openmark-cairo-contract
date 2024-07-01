@@ -4,7 +4,7 @@
   "scripts": {
     "chain": "cd local-devnet && cargo run -- --seed 0 --account-class cairo1",
     "deploy": "ts-node scripts-ts/helpers/deploy-wrapper.ts",
-    "openmark": "ts-node scripts-ts/openmark.ts",
+    "openmark-tests": "ts-node scripts-ts/tests/message_hash.ts",
     "test": "cd contracts && snforge test",
     "compile": "cd contracts && scarb build",
     "format": "prettier --write 'scripts-ts/**/*.{ts,tsx}' && cd contracts && scarb fmt",

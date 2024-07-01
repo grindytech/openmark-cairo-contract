@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+// use pedersen::PedersenTrait;
 use core::pedersen::PedersenTrait;
 use core::hash::{HashStateTrait, HashStateExTrait};
 
@@ -10,24 +11,24 @@ pub const STARKNET_DOMAIN_TYPE_HASH: felt252 =
 
 #[derive(Drop, Copy, Hash)]
 pub struct StarknetDomain {
-    name: felt252,
-    version: felt252,
-    chain_id: felt252,
+    pub name: felt252,
+    pub version: felt252,
+    pub chain_id: felt252,
 }
 
 pub const ORDER_STRUCT_TYPE_HASH: felt252 =
     selector!(
-        "Order(nftContract:ContractAddress,tokenId:u64,price:u256,salt:felt252,expiry:u256,option:u32)"
+        "Order(nftContract:ContractAddress,tokenId:u64,price:u256,salt:felt,expiry:u256,option:u32)"
     );
 
 #[derive(Copy, Drop, Serde, Hash)]
 pub struct Order {
-    nftContract: ContractAddress,
-    tokenId: u64,
-    price: u256,
-    salt: felt252,
-    expiry: u256,
-    option: OrderType,
+    pub nftContract: ContractAddress,
+    pub tokenId: u64,
+    pub price: u256,
+    pub salt: felt252,
+    pub expiry: u256,
+    pub option: OrderType,
 }
 
 #[derive(Copy, Drop, Serde, Hash)]
@@ -36,7 +37,7 @@ pub enum OrderType {
     Offer,
 }
 
-trait IStructHash<T> {
+pub trait IStructHash<T> {
     fn hash_struct(self: @T) -> felt252;
 }
 
@@ -58,15 +59,4 @@ impl StructHashSimpleStruct of IStructHash<Order> {
         state = state.update_with(3);
         state.finalize()
     }
-}
-
-
-#[test]
-#[available_gas(2000000)]
-fn test_valid_hash() {
-    // This value was computed using StarknetJS
-    let message_hash = 0x1e739b39f83b38f182edaed69f730f18eff802d3ef44be91c3733cdcab6de2f;
-    let simple_struct = SimpleStruct { some_felt252: 712, some_u128: 42 };
-    set_caller_address(contract_address_const::<420>());
-    assert(simple_struct.get_message_hash() == message_hash, 'Hash should be valid');
 }

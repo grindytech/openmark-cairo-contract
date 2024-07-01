@@ -16,6 +16,7 @@
     "test": "yarn workspace @ss-2/snfoundry test",
     "compile": "yarn workspace @ss-2/snfoundry compile",
     "start": "yarn workspace @ss-2/nextjs dev",
+    "openmark": "yarn workspace @ss-2/snfoundry openmark",
     "next:lint": "yarn workspace @ss-2/nextjs lint",
     "next:check-types": "yarn workspace @ss-2/nextjs check-types",
     "vercel": "yarn workspace @ss-2/nextjs vercel",

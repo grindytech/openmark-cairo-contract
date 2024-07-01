@@ -10,3 +10,8 @@ pub trait IOpenMark<TState> {
     fn verifyOrder(self: @TState, order: Order, signature: ByteArray) -> ContractAddress;
 }
 
+
+#[starknet::interface]
+pub trait IOffchainMessageHash<T> {
+    fn get_message_hash(self: @T, value: Order) -> felt252;
+}

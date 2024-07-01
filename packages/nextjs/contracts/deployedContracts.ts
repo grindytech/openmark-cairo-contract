@@ -6,27 +6,11 @@
 const deployedContracts = {
   devnet: {
     OpenMark: {
-      address:
-        "0x0155caf705f3ebc461fd426aa54d1d1cbb85f8b6621506e2a223a1beb57074df",
       abi: [
         {
           type: "impl",
           name: "OpenMarkImpl",
           interface_name: "contracts::Interface::IOpenMark",
-        },
-        {
-          type: "struct",
-          name: "core::integer::u256",
-          members: [
-            {
-              name: "low",
-              type: "core::integer::u128",
-            },
-            {
-              name: "high",
-              type: "core::integer::u128",
-            },
-          ],
         },
         {
           type: "enum",
@@ -52,11 +36,11 @@ const deployedContracts = {
             },
             {
               name: "tokenId",
-              type: "core::integer::u64",
+              type: "core::integer::u128",
             },
             {
               name: "price",
-              type: "core::integer::u256",
+              type: "core::integer::u128",
             },
             {
               name: "salt",
@@ -64,7 +48,7 @@ const deployedContracts = {
             },
             {
               name: "expiry",
-              type: "core::integer::u256",
+              type: "core::integer::u128",
             },
             {
               name: "option",
@@ -74,19 +58,25 @@ const deployedContracts = {
         },
         {
           type: "struct",
-          name: "core::byte_array::ByteArray",
+          name: "core::array::Span::<core::felt252>",
           members: [
             {
-              name: "data",
-              type: "core::array::Array::<core::bytes_31::bytes31>",
+              name: "snapshot",
+              type: "@core::array::Array::<core::felt252>",
+            },
+          ],
+        },
+        {
+          type: "enum",
+          name: "core::bool",
+          variants: [
+            {
+              name: "False",
+              type: "()",
             },
             {
-              name: "pending_word",
-              type: "core::felt252",
-            },
-            {
-              name: "pending_word_len",
-              type: "core::integer::u32",
+              name: "True",
+              type: "()",
             },
           ],
         },
@@ -96,7 +86,7 @@ const deployedContracts = {
           items: [
             {
               type: "function",
-              name: "verifyOrder",
+              name: "buy",
               inputs: [
                 {
                   name: "order",
@@ -104,12 +94,63 @@ const deployedContracts = {
                 },
                 {
                   name: "signature",
-                  type: "core::byte_array::ByteArray",
+                  type: "core::array::Span::<core::felt252>",
+                },
+              ],
+              outputs: [],
+              state_mutability: "view",
+            },
+            {
+              type: "function",
+              name: "verifyOrder",
+              inputs: [
+                {
+                  name: "order",
+                  type: "contracts::Primitives::Order",
+                },
+                {
+                  name: "signer",
+                  type: "core::felt252",
+                },
+                {
+                  name: "signature",
+                  type: "core::array::Span::<core::felt252>",
                 },
               ],
               outputs: [
                 {
-                  type: "core::starknet::contract_address::ContractAddress",
+                  type: "core::bool",
+                },
+              ],
+              state_mutability: "view",
+            },
+          ],
+        },
+        {
+          type: "impl",
+          name: "OffchainMessageHashImpl",
+          interface_name: "contracts::Interface::IOffchainMessageHash",
+        },
+        {
+          type: "interface",
+          name: "contracts::Interface::IOffchainMessageHash",
+          items: [
+            {
+              type: "function",
+              name: "get_message_hash",
+              inputs: [
+                {
+                  name: "order",
+                  type: "contracts::Primitives::Order",
+                },
+                {
+                  name: "signer",
+                  type: "core::felt252",
+                },
+              ],
+              outputs: [
+                {
+                  type: "core::felt252",
                 },
               ],
               state_mutability: "view",

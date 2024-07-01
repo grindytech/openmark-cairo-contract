@@ -18,3 +18,8 @@ pub trait IOpenMark<TState> {
 pub trait IOffchainMessageHash<T> {
     fn get_message_hash(self: @T, order: Order, signer: felt252) -> felt252;
 }
+
+#[starknet::interface]
+pub trait IOM721Token<T> {
+    fn safe_mint(ref self: T, to: ContractAddress, quantity: u256);
+}

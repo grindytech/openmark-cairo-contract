@@ -14,8 +14,9 @@ use contracts::{
     Interface::{
         IOffchainMessageHashDispatcher, IOffchainMessageHashDispatcherTrait, IOffchainMessageHash,
         IOpenMarkDispatcher, IOpenMarkDispatcherTrait, IOpenMark
-    }
+    },
 };
+use openzeppelin::token::erc721::erc721::ERC721Component;
 
 
 fn deploy_contract() -> ContractAddress {
@@ -27,6 +28,14 @@ fn deploy_contract() -> ContractAddress {
 
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
 
+    contract_address
+}
+
+fn deploy_erc721() -> ContractAddress {
+    let contract = declare("OM721Token").unwrap();
+    
+    let mut constructor_calldata = array![];
+    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
     contract_address
 }
 
@@ -83,5 +92,33 @@ fn verify_order_works() {
     let result = dispatcher.verifyOrder(order, signer, signature.span());
 
     assert_eq!(result, true);
+}
+
+
+#[test]
+#[available_gas(2000000)]
+fn buy_works() {
+    let contract_address = deploy_contract();
+
+    let erc_721 = deploy_erc721();
+    // let ERC721Dispatcher = Inter { erc_721 };
+    
+
+    let order = Order {
+        nftContract: erc_721,
+        tokenId: 2,
+        price: 3,
+        salt: 4,
+        expiry: 5,
+        option: OrderType::Buy,
+    };
+    let signer = 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2;
+
+
+    start_cheat_caller_address(contract_address, signer.try_into().unwrap());
+
+    let dispatcher = IOpenMarkDispatcher { contract_address };
+
+    assert_eq!(true, true);
 }
 

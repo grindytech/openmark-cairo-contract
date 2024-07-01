@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-// use pedersen::PedersenTrait;
 use core::pedersen::PedersenTrait;
 use core::hash::{HashStateTrait, HashStateExTrait};
 

@@ -46,14 +46,12 @@ fn get_message_hash_works() {
         expiry: 5,
         option: OrderType::Buy,
     };
-    let signer: ContractAddress = 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2
-        .try_into()
-        .unwrap();
+    let signer = 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2;
 
-    start_cheat_caller_address(contract_address, signer);
+    start_cheat_caller_address(contract_address, signer.try_into().unwrap());
     let dispatcher = IOffchainMessageHashDispatcher { contract_address };
 
-    let result = dispatcher.get_message_hash(order);
+    let result = dispatcher.get_message_hash(order, signer);
 
     assert_eq!(result, message_hash,);
 }

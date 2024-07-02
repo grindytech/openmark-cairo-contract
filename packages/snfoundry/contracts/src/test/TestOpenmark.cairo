@@ -1,4 +1,4 @@
-use openzeppelin::token::erc721::interface::IERC721DispatcherTrait;
+use openzeppelin::token::erc721::interface::{IERC721DispatcherTrait, IERC721Dispatcher};
 use contracts::Interface::IOM721TokenDispatcherTrait;
 use core::option::OptionTrait;
 use core::traits::TryInto;
@@ -18,34 +18,73 @@ use contracts::{
         IOpenMarkDispatcher, IOpenMarkDispatcherTrait, IOpenMark, IOM721TokenDispatcher
     },
 };
-use openzeppelin::token::erc721::interface::IERC721Dispatcher;
+
+const TEST_ETH_ADDRESS: felt252 = 0x73E953A41B89F491B2E6E0DAA4EA2E47980A051FA3AE77A4F880BFC0D131015;
+const TEST_ERC721_ADDRESS: felt252 =
+    0x52D3AA5AF7D5A5D024F99EF80645C32B0E94C9CC4645CDA09A36BE2696257AA;
 
 
-fn deploy_contract() -> ContractAddress {
+fn deploy_openmark() -> ContractAddress {
     let contract = declare("OpenMark").unwrap();
+    let eth_address = deploy_erc20_at(TEST_ETH_ADDRESS.try_into().unwrap());
 
     let mut constructor_calldata = array![];
     let owner = contract_address_const::<420>();
+
     constructor_calldata.append_serde(owner);
+    constructor_calldata.append_serde(eth_address);
 
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
 
     contract_address
 }
 
-fn deploy_erc721(erc721_address: ContractAddress) {
+
+fn deploy_erc20() -> ContractAddress {
+    let contract = declare("OpenMarkCoin").unwrap();
+    let mut constructor_calldata = array![];
+    let initial_supply = 1000000000000000000000000000_u256;
+    let recipient = contract_address_const::<420>();
+
+    constructor_calldata.append_serde(initial_supply);
+    constructor_calldata.append_serde(recipient);
+    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
+    contract_address
+}
+
+fn deploy_erc20_at(addr: ContractAddress) -> ContractAddress {
+    let contract = declare("OpenMarkCoin").unwrap();
+    let mut constructor_calldata = array![];
+    let initial_supply = 1000000000000000000000000000_u256;
+    let recipient = contract_address_const::<420>();
+
+    constructor_calldata.append_serde(initial_supply);
+    constructor_calldata.append_serde(recipient);
+    let (contract_address, _) = contract.deploy_at(@constructor_calldata, addr).unwrap();
+    contract_address
+}
+
+fn deploy_erc721() -> ContractAddress {
     let contract = declare("OM721Token").unwrap();
 
     let mut constructor_calldata = array![];
-    contract.deploy_at(@constructor_calldata, erc721_address).unwrap();
+    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
+    contract_address
+}
+
+fn deploy_erc721_at(addr: ContractAddress) -> ContractAddress {
+    let contract = declare("OM721Token").unwrap();
+
+    let mut constructor_calldata = array![];
+    let (contract_address, _) = contract.deploy_at(@constructor_calldata, addr).unwrap();
+    contract_address
 }
 
 
 #[test]
 #[available_gas(2000000)]
 fn get_message_hash_works() {
-    let contract_address = deploy_contract();
-
+    let contract_address = deploy_openmark();
     // This value was computed using StarknetJS
     let message_hash = 0x4d5c7bf7d624d7ade7f8d4c73092ebcb9287e2be556ef15f65116dc94421bd1;
     let order = Order {
@@ -65,11 +104,10 @@ fn get_message_hash_works() {
 
     assert_eq!(result, message_hash,);
 }
-
 #[test]
 #[available_gas(2000000)]
 fn verify_order_works() {
-    let contract_address = deploy_contract();
+    let contract_address = deploy_openmark();
 
     let order = Order {
         nftContract: 1.try_into().unwrap(),
@@ -95,13 +133,13 @@ fn verify_order_works() {
     assert_eq!(result, true);
 }
 
-
 #[test]
 #[available_gas(2000000)]
 fn buy_works() {
-    let contract_address = deploy_contract();
-    let erc721_address = 1.try_into().unwrap();
-    deploy_erc721(erc721_address);
+    let erc721_address = deploy_erc721_at(TEST_ERC721_ADDRESS.try_into().unwrap());
+
+    let openmark_address = deploy_openmark();
+
     let seller = 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2;
     let buyer = 0x913b4e904ab75554db59b64e1d26116d1ba1c033ce57519b53e35d374ef2dd;
 
@@ -119,17 +157,19 @@ fn buy_works() {
         option: OrderType::Buy,
     };
 
-    start_cheat_caller_address(contract_address, buyer.try_into().unwrap());
+    IERC721Dispatcher { contract_address: erc721_address }.approve(openmark_address, 2);
+
+    start_cheat_caller_address(openmark_address, buyer.try_into().unwrap());
     let mut signature = array![
-        0x7d22529d850174cd51eca7e156397cce6518c7bc82343758382e16c5fe9fe55,
-        0x4aa8aab803bc9fe0f6579367ef034f8a98d2ccd1617eb0b48ece03819ac2e2
+        0x5228d8ebab110b3038c328892e8293c49ef8777f02de0e094c1a902e91e0271,
+        0x72ac0a9ad3fd5ad9143a720148d174e724aa752dfedc6e4dce767b82cbbd913
     ];
-    let OpenMarkDispatcher = IOpenMarkDispatcher { contract_address };
+    let OpenMarkDispatcher = IOpenMarkDispatcher { contract_address: openmark_address };
 
     OpenMarkDispatcher.buy(seller.try_into().unwrap(), order, signature.span());
-    let ERC7211Dispatcher = IERC721Dispatcher { contract_address: erc721_address };
+    let ERC721Dispatcher = IERC721Dispatcher { contract_address: erc721_address };
 
-    assert_eq!(ERC7211Dispatcher.owner_of(2), buyer.try_into().unwrap());
+    assert_eq!(ERC721Dispatcher.owner_of(2), buyer.try_into().unwrap());
 
     assert_eq!(true, true);
 }

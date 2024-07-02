@@ -55,7 +55,7 @@ function getTypedData(myStruct: Order, chainId: string): typedData.TypedData {
 }
 
 const order: Order = {
-  nftContract: "1",
+  nftContract: "2341477128991891436918010733589720897462482571482832085806644138878406121386",
   tokenId: "2",
   price: "3",
   salt: "4",

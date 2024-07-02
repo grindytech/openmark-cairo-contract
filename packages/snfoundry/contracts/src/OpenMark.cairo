@@ -15,7 +15,7 @@ mod OpenMark {
     use core::ecdsa::check_ecdsa_signature;
 
     use contracts::Primitives::{
-        Order, ORDER_STRUCT_TYPE_HASH, ETH_CONTRACT_ADDRESS, StarknetDomain, IStructHash
+        Order, ORDER_STRUCT_TYPE_HASH, StarknetDomain, IStructHash
     };
     use contracts::Interface::{IOpenMark, IOffchainMessageHash};
 
@@ -47,9 +47,8 @@ mod OpenMark {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, owner: ContractAddress) {
-        let eth_contract_address = ETH_CONTRACT_ADDRESS.try_into().unwrap();
-        self.eth_token.write(IERC20CamelDispatcher { contract_address: eth_contract_address });
+    fn constructor(ref self: ContractState, owner: ContractAddress, eth_address: ContractAddress) {
+        self.eth_token.write(IERC20CamelDispatcher { contract_address: eth_address });
 
         self.ownable.initializer(owner);
     }
@@ -70,10 +69,11 @@ mod OpenMark {
             assert(self.verifyOrder(order, seller_felt, signature), Errors::INVALID_SIGNATURE);
 
             let nft_dispatcher = IERC721Dispatcher { contract_address: order.nftContract };
+
             assert(nft_dispatcher.owner_of(order.tokenId.into()) == seller, Errors::INVALID_SELLER);
 
             nft_dispatcher.transfer_from(seller, buyer, order.tokenId.into());
-            self.eth_token.read().transferFrom(get_caller_address(), seller, order.price.into());
+            // self.eth_token.read().transfer(seller, order.price.into());
         }
 
         fn verifyOrder(

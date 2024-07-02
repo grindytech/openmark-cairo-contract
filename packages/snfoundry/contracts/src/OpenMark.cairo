@@ -2,7 +2,9 @@
 mod OpenMark {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
-    use openzeppelin::token::erc721::interface::{IERC721};
+    use openzeppelin::token::erc721::interface::{
+        IERC721, IERC721Dispatcher, IERC721DispatcherTrait
+    };
     use openzeppelin::account::utils::{is_valid_stark_signature};
     use starknet::{
         contract_address_const, get_caller_address, get_contract_address, get_tx_info,
@@ -31,6 +33,10 @@ mod OpenMark {
         OwnableEvent: OwnableComponent::Event,
     }
 
+    mod Errors {
+        pub const INVALID_SIGNATURE: felt252 = 'OPENMARK: invalid signature';
+        pub const INVALID_SELLER: felt252 = 'OPENMARK: invalid seller';
+    }
 
     #[storage]
     struct Storage {
@@ -51,13 +57,23 @@ mod OpenMark {
 
     #[abi(embed_v0)]
     impl OpenMarkImpl of IOpenMark<ContractState> {
-
         // fn acceptOffer(self: @ContractState) {}
 
         // fn cancelOrder(self: @ContractState) {}
 
-        fn buy(self: @ContractState, order: Order, signature: Span<felt252>) {
-            
+        fn buy(
+            self: @ContractState, seller: ContractAddress, order: Order, signature: Span<felt252>
+        ) {
+            let seller_felt: felt252 = seller.into();
+            let buyer = get_caller_address();
+
+            assert(self.verifyOrder(order, seller_felt, signature), Errors::INVALID_SIGNATURE);
+
+            let nft_dispatcher = IERC721Dispatcher { contract_address: order.nftContract };
+            assert(nft_dispatcher.owner_of(order.tokenId.into()) == seller, Errors::INVALID_SELLER);
+
+            nft_dispatcher.transfer_from(seller, buyer, order.tokenId.into());
+            self.eth_token.read().transferFrom(get_caller_address(), seller, order.price.into());
         }
 
         fn verifyOrder(

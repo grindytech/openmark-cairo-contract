@@ -6,11 +6,9 @@ pub trait IOpenMark<TState> {
     // fn acceptOffer(self: @TState);
     // fn cancelOrder(self: @TState);
 
-    fn buy(self: @TState, order: Order, signature: Span<felt252>);
+    fn buy(self: @TState, seller: ContractAddress, order: Order, signature: Span<felt252>);
 
-    fn verifyOrder(
-        self: @TState, order: Order, signer: felt252, signature: Span<felt252>
-    ) -> bool;
+    fn verifyOrder(self: @TState, order: Order, signer: felt252, signature: Span<felt252>) -> bool;
 }
 
 

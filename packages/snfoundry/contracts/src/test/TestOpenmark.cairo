@@ -1,4 +1,5 @@
 use openzeppelin::token::erc721::interface::{IERC721DispatcherTrait, IERC721Dispatcher};
+use openzeppelin::token::erc20::interface::{IERC20CamelDispatcherTrait, IERC20CamelDispatcher};
 use contracts::Interface::IOM721TokenDispatcherTrait;
 use core::option::OptionTrait;
 use core::traits::TryInto;
@@ -6,7 +7,9 @@ use core::array::ArrayTrait;
 use snforge_std::signature::SignerTrait;
 use openzeppelin::tests::utils::constants::OWNER;
 use openzeppelin::utils::serde::SerializedAppend;
-use snforge_std::{declare, ContractClassTrait, start_cheat_caller_address};
+use snforge_std::{
+    declare, ContractClassTrait, start_cheat_caller_address, cheat_caller_address_global
+};
 use starknet::{
     ContractAddress, contract_address_const, get_tx_info, get_caller_address,
     testing::{set_caller_address}
@@ -19,19 +22,19 @@ use contracts::{
     },
 };
 
-const TEST_ETH_ADDRESS: felt252 = 0x73E953A41B89F491B2E6E0DAA4EA2E47980A051FA3AE77A4F880BFC0D131015;
+const TEST_ETH_ADDRESS: felt252 = 0x64948D425BCD9983F21E80124AFE95D1D6987717380B813FAD8A3EA2C4D31C8;
 const TEST_ERC721_ADDRESS: felt252 =
     0x52D3AA5AF7D5A5D024F99EF80645C32B0E94C9CC4645CDA09A36BE2696257AA;
-
+const TEST_SELLER: felt252 = 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2;
+const TEST_BUYER: felt252 = 0x913b4e904ab75554db59b64e1d26116d1ba1c033ce57519b53e35d374ef2dd;
 
 fn deploy_openmark() -> ContractAddress {
     let contract = declare("OpenMark").unwrap();
     let eth_address = deploy_erc20_at(TEST_ETH_ADDRESS.try_into().unwrap());
 
     let mut constructor_calldata = array![];
-    let owner = contract_address_const::<420>();
 
-    constructor_calldata.append_serde(owner);
+    constructor_calldata.append_serde(OWNER());
     constructor_calldata.append_serde(eth_address);
 
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
@@ -44,7 +47,7 @@ fn deploy_erc20() -> ContractAddress {
     let contract = declare("OpenMarkCoin").unwrap();
     let mut constructor_calldata = array![];
     let initial_supply = 1000000000000000000000000000_u256;
-    let recipient = contract_address_const::<420>();
+    let recipient: ContractAddress = TEST_BUYER.try_into().unwrap();
 
     constructor_calldata.append_serde(initial_supply);
     constructor_calldata.append_serde(recipient);
@@ -56,7 +59,7 @@ fn deploy_erc20_at(addr: ContractAddress) -> ContractAddress {
     let contract = declare("OpenMarkCoin").unwrap();
     let mut constructor_calldata = array![];
     let initial_supply = 1000000000000000000000000000_u256;
-    let recipient = contract_address_const::<420>();
+    let recipient: ContractAddress = TEST_BUYER.try_into().unwrap();
 
     constructor_calldata.append_serde(initial_supply);
     constructor_calldata.append_serde(recipient);
@@ -136,41 +139,57 @@ fn verify_order_works() {
 #[test]
 #[available_gas(2000000)]
 fn buy_works() {
-    let erc721_address = deploy_erc721_at(TEST_ERC721_ADDRESS.try_into().unwrap());
+    let erc721_address: ContractAddress = deploy_erc721_at(TEST_ERC721_ADDRESS.try_into().unwrap());
+    let eth_address: ContractAddress = TEST_ETH_ADDRESS.try_into().unwrap();
 
     let openmark_address = deploy_openmark();
+    let seller: ContractAddress = TEST_SELLER.try_into().unwrap();
+    let buyer: ContractAddress = TEST_BUYER.try_into().unwrap();
+    let ERC721Dispatcher = IERC721Dispatcher { contract_address: erc721_address };
+    let ERC20Dispatcher = IERC20CamelDispatcher { contract_address: eth_address };
 
-    let seller = 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2;
-    let buyer = 0x913b4e904ab75554db59b64e1d26116d1ba1c033ce57519b53e35d374ef2dd;
-
-    let IOM721Dispatcher = IOM721TokenDispatcher { contract_address: erc721_address };
-    start_cheat_caller_address(erc721_address, seller.try_into().unwrap());
-
-    IOM721Dispatcher.safe_mint(seller.try_into().unwrap(), 5);
-
+    let price = 3_u128;
     let order = Order {
         nftContract: erc721_address,
         tokenId: 2,
-        price: 3,
+        price: price,
         salt: 4,
         expiry: 5,
         option: OrderType::Buy,
     };
 
-    IERC721Dispatcher { contract_address: erc721_address }.approve(openmark_address, 2);
+    // create setPrice
+    {
+        start_cheat_caller_address(erc721_address, seller);
 
-    start_cheat_caller_address(openmark_address, buyer.try_into().unwrap());
-    let mut signature = array![
-        0x5228d8ebab110b3038c328892e8293c49ef8777f02de0e094c1a902e91e0271,
-        0x72ac0a9ad3fd5ad9143a720148d174e724aa752dfedc6e4dce767b82cbbd913
-    ];
-    let OpenMarkDispatcher = IOpenMarkDispatcher { contract_address: openmark_address };
+        let IOM721Dispatcher = IOM721TokenDispatcher { contract_address: erc721_address };
+        IOM721Dispatcher.safe_mint(seller, 5);
 
-    OpenMarkDispatcher.buy(seller.try_into().unwrap(), order, signature.span());
-    let ERC721Dispatcher = IERC721Dispatcher { contract_address: erc721_address };
+        ERC721Dispatcher.approve(openmark_address, 2);
+    }
+    
+    // buy and verify
+    {
+        start_cheat_caller_address(openmark_address, buyer);
+        start_cheat_caller_address(eth_address, buyer);
 
-    assert_eq!(ERC721Dispatcher.owner_of(2), buyer.try_into().unwrap());
+        ERC20Dispatcher.approve(openmark_address, 3);
 
-    assert_eq!(true, true);
+        let mut signature = array![
+            0x5228d8ebab110b3038c328892e8293c49ef8777f02de0e094c1a902e91e0271,
+            0x72ac0a9ad3fd5ad9143a720148d174e724aa752dfedc6e4dce767b82cbbd913
+        ];
+        let OpenMarkDispatcher = IOpenMarkDispatcher { contract_address: openmark_address };
+
+        let buyer_before_balance = ERC20Dispatcher.balanceOf(buyer);
+        let seller_before_balance = ERC20Dispatcher.balanceOf(seller);
+
+        OpenMarkDispatcher.buy(seller, order, signature.span());
+        let buyer_after_balance = ERC20Dispatcher.balanceOf(buyer);
+        let seller_after_balance = ERC20Dispatcher.balanceOf(seller);
+
+        assert_eq!(ERC721Dispatcher.owner_of(2), buyer);
+        assert_ne!(buyer_before_balance, buyer_after_balance - price.into());
+        assert_ne!(seller_before_balance, seller_after_balance + price.into());
+    }
 }
-
